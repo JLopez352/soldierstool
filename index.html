@@ -881,7 +881,19 @@
           placeholder="e.g. 2:12">
         <label for="plank">Plank — time (MM:SS)</label><input id="plank" type="text" inputmode="numeric"
           placeholder="e.g. 2:30">
-        <label for="run">2-Mile Run — time (MM:SS)</label><input id="run" type="text" inputmode="numeric"
+        <label for="run">2-Mile Run — time (MM:SS)</label><label for="aerobicEvent">Aerobic Event</label>
+<select id="aerobicEvent">
+  <option value="run">2-Mile Run</option>
+  <option value="row">5,000m Row</option>
+  <option value="bike">12,000m Bike</option>
+  <option value="swim">1,000m Swim</option>
+  <option value="walk">2.5-Mile Walk</option>
+</select>
+
+<div id="aerobicEventNote" class="note">
+  Select the aerobic event you are using. Alternate-event eligibility and scoring must be verified against current Army guidance and your authorized profile.
+</div>
+<input id="run" type="text" inputmode="numeric"
           placeholder="e.g. 17:45">
         <button class="calc" id="calculateAFTBtn" type="button">Calculate AFT Score</button>
         <div class="result" id="result"></div>
@@ -943,12 +955,28 @@
       const sdc = timeSec(document.getElementById('sdc').value);
       const plank = timeSec(document.getElementById('plank').value);
       const run = timeSec(document.getElementById('run').value);
+      const aerobicEvent = document.getElementById('aerobicEvent')?.value || 'run';
+      console.log('Selected aerobic event:', aerobicEvent);
       r.classList.add('show');
       r.style.display = 'block';
       if (!Number.isFinite(age) || age < 17 || age > 100) { r.innerHTML = '<strong>Enter a valid age (17–100).</strong>'; r.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
       if (!Number.isFinite(dl) || !Number.isFinite(hrp) || !Number.isFinite(sdc) || !Number.isFinite(plank) || !Number.isFinite(run)) { r.innerHTML = '<strong>Missing or invalid score.</strong><div style="color:#aeb8b1;margin-top:7px">Enter all five events. Times can be entered as MM:SS (2:15) or digits (215).</div>'; r.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
       const scores = [scoreEvent('md', age, sex, standard, dl, false), scoreEvent('hrp', age, sex, standard, hrp, false), scoreEvent('sdc', age, sex, standard, sdc, true), scoreEvent('plank', age, sex, standard, plank, true), scoreEvent('run', age, sex, standard, run, true)];
-      const names = ['3RM Deadlift', 'Hand-Release Push-Ups', 'Sprint-Drag-Carry', 'Plank', '2-Mile Run'];
+      const aerobicNames = {
+  run: '2-Mile Run',
+  row: '5,000m Row',
+  bike: '12,000m Bike',
+  swim: '1,000m Swim',
+  walk: '2.5-Mile Walk'
+};
+
+const names = [
+  '3RM Deadlift',
+  'Hand-Release Push-Ups',
+  'Sprint-Drag-Carry',
+  'Plank',
+  aerobicNames[aerobicEvent] || '2-Mile Run'
+];
       const total = scores.reduce((sum, x) => sum + (x === null ? 0 : x), 0);
       const below = names.filter((_, i) => scores[i] === null || scores[i] < 60);
       const passing = standard === 'combat' ? total >= 350 && below.length === 0 : total >= 300 && below.length === 0;
@@ -1052,6 +1080,32 @@
         input.addEventListener('blur', () => formatTimeInput(input));
         input.addEventListener('input', () => { input.value = input.value.replace(/[^0-9:]/g, ''); });
       });
+      const aerobicEvent = document.getElementById('aerobicEvent');
+const runLabel = document.querySelector('label[for="run"]');
+const aerobicNote = document.getElementById('aerobicEventNote');
+
+if (aerobicEvent && runLabel) {
+  aerobicEvent.addEventListener('change', () => {
+    const event = aerobicEvent.value;
+
+    const labels = {
+      run: '2-Mile Run — time (MM:SS)',
+      row: '5,000m Row — time (MM:SS)',
+      bike: '12,000m Bike — time (MM:SS)',
+      swim: '1,000m Swim — time (MM:SS)',
+      walk: '2.5-Mile Walk — time (MM:SS)'
+    };
+
+    runLabel.textContent = labels[event] || labels.run;
+
+    if (aerobicNote) {
+      aerobicNote.textContent =
+        event === 'run'
+          ? 'Standard 2-mile aerobic event.'
+          : 'Alternate aerobic event selected. Eligibility and official scoring must be verified against current Army guidance and your authorized profile.';
+    }
+  });
+}
       document.querySelectorAll('#aft input').forEach(input => input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); formatTimeInput(input); calculateAFT(); } }));
       const cp = document.getElementById('calcPointsBtn'); if (cp) cp.addEventListener('click', calcPromotionPoints);
       const lm = document.getElementById('lookupMosBtn'); if (lm) lm.addEventListener('click', lookupPromotionCutoff);
